@@ -1,4 +1,24 @@
 # 1. 介绍
+本文描述了TLS 1.2协议的LURK扩展，即在TLS 1.2和DTLS 1.2的上下文中，LURK服务器可以实现加密服务。
+
+更具体的说，LURK服务器将负责执行与TLS服务器的私钥相关的加密操作，而终止TLS会话的其他方面是位于同一管理域或不同管理域中的其他服务来处理。大部分的加密操作是和TLS身份验证相关的，本文限制加密操作的身份验证方法为：RSA、ECDHE_RSA和ECDHE_ECDSA。
+
+有关TLS上下文中预见的一些用例的详细描述可以在[I-D.mglt-lurk-tls-use-cases](https://tools.ietf.org/html/draft-mglt-lurk-tls12-01#ref-I-D.mglt-lurk-tls-use-cases)中找到。
+
+HTTPS委托一直成为CDNI（Content Delivery Networks Interconnection）工作组主要的关注点，几种机制已经将负载从上游实体委托给下游实体。实体可以根据上下文的不同而具有不通的特点。通常委托包括内容所有者，CDN提供商，域名所有者。 [I-D.fieau-cdni-https-delegation]关于CDN互联的各种机制给出了详细的比较，本节的剩余部分将以高层次的视角来讨论一下这些机制。
+
+STAR [I-D.ietf-acme-star](https://tools.ietf.org/html/draft-mglt-lurk-tls12-01#ref-I-D.ietf-acme-star),
+[I-D.sheffer-acme-star-request](https://tools.ietf.org/html/draft-mglt-lurk-tls12-01#ref-I-D.sheffer-acme-star-request)描述了一种方法，域名所有者或者内容所有者编排CA和CDN之间的刷新过程（终止TLS回话）。CDN使用[I-D.ietf-acme-acme](https://tools.ietf.org/html/draft-mglt-lurk-tls12-01#ref-I-D.ietf-acme-acme)定期的自动刷新证书，允许使用短期证书。
+
+委托的凭证 [I-D.rescorla-tls-subcerts](https://tools.ietf.org/html/draft-mglt-lurk-tls12-01#ref-I-D.rescorla-tls-subcerts)包括一个证书可以让服务器来产生“委托的凭证”。
+
+STAR和“委托的凭证”都需要CA做一些改变，适用委托凭证的新的证书类型，以及对于STAR的被委托和委托方实体的新接口。在两种情况下，TLS客户端验证被委托实体。而对于STAR，TLS客户端不需要改变，“委托凭证”方案可行。在两种情况下，委托被限制在一定时间内（7天），也限制了对被盗密钥和假冒服务器的使用。这种委托提供了架构上的高可扩展性，并且防止了在建立TLS回话时产生额外的延迟。
+
+LURK架构和LURK扩展tls12，不会通过委派整个TLS终止来继续进行HTTPS委派的委派。相反，TLS终止被划分成子服务，例如网络部分和加密操作部分。跟网络部分相关的微服务是被委派的，和加密操作相关的微服务是不可以被委派的。结果，LURK架构专注于保护加密材料，组织加密材料的泄漏，例如通过避免托管加密材料的节点暴露在互联网上。此外，LURK提供了立刻终止可疑节点的代理。另一方面，LURK扩展tls12引入了一些延迟，而且不像STAR和委托凭证方案那样可扩展。
+
+LURK扩展tls12可以被看成是STAR和委托凭证方案的补充。LURK扩展tls12是一个后端的解决方案，不需要TLS客户端和CA做任何修改。这也是为了保护加密材料。
+
+LURK也可以部署在一个管理域中，从而可以更好的控制TLS服务器的部署。
 # 2. 术语和缩略词
 # 3. LURK首部
 # 4. rsa_master, rsa_master_with_poh
