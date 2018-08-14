@@ -19,7 +19,10 @@ LURK架构和LURK扩展tls12，不会通过委派整个TLS终止来继续进行H
 LURK扩展tls12可以被看成是STAR和委托凭证方案的补充。LURK扩展tls12是一个后端的解决方案，不需要TLS客户端和CA做任何修改。这也做的目的也是为了保护加密材料。
 
 LURK也可以部署在一个管理域中，从而可以更好的控制TLS服务器的部署。
+
 # 2. 术语和缩略词
+本文复用了[I-D.mglt-lurk-lurk](https://tools.ietf.org/html/draft-mglt-lurk-tls12-01#ref-I-D.mglt-lurk-lurk)中定义的术语。
+
 # 3. LURK首部
 # 4. rsa_master, rsa_master_with_poh
 ## 4.1 请求负载
