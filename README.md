@@ -1,2 +1,2 @@
 
-[draft-mglt-lurk-tls-00](https://tools.ietf.org/id/draft-mglt-lurk-tls-00.html)
+[draft-mglt-lurk-tls12-01](https://tools.ietf.org/html/draft-mglt-lurk-tls12-01)
