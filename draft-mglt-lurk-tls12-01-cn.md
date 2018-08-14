@@ -24,6 +24,54 @@ LURK也可以部署在一个管理域中，从而可以更好的控制TLS服务�
 本文复用了[I-D.mglt-lurk-lurk](https://tools.ietf.org/html/draft-mglt-lurk-tls12-01#ref-I-D.mglt-lurk-lurk)中定义的术语。
 
 # 3. LURK首部
+LURK TLS1.2是LURK扩展，引入了新的名称“tls12”。本文将扩展定义为“tls12”，版本号为1。LURK扩展扩充了在[I-D.mglt-lurk-lurk](https://tools.ietf.org/html/draft-mglt-lurk-tls12-01#ref-I-D.mglt-lurk-lurk)中定义的LURKHeader结构。如下所示：
+```
+enum {
+   tls12 (1), (255)
+} Designation;
+
+enum {
+  capabilities (0), ping (1), rsa_master (2),
+  rsa_extended_master (3), ecdhe (4), (255)
+}TLS12Type;
+
+
+enum {
+   // generic values reserved or aligned with the
+   // LURK Protocol
+   request (0), success (1), undefined_error (2),
+   invalid_payload_format (3),
+
+   // code points for rsa authentication
+   invalid_key_id_type (4), invalid_key_id (5),
+   invalid_tls_random (6), invalid_prf (7),
+   invalid_encrypted_premaster (8), invalid_finished (9)
+
+   //code points for ecdhe authentication
+   invalid_ec_type (10), invalid_ec_curve (11),
+   invalid_poo_prf (12), invalid_poo (13), (255)
+}TLS12Status
+
+struct {
+    Designation designation = "tls12";
+    int8 version = 1;
+} Extension;
+
+struct {
+   Extension extension;
+   select( Extension ){
+       case ("tls12", 1):
+           TLS12Type;
+   } type;
+   select( Extension ){
+       case ("tls12", 1):
+           TLS12Status;
+   } status;
+   uint64 id;
+   unint32 length;
+} LURKHeader;
+```
+
 # 4. rsa_master, rsa_master_with_poh
 ## 4.1 请求负载
 ### 4.1.1 完美向前保密
