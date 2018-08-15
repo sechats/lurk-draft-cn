@@ -297,10 +297,67 @@ LURK客户端构建基础，如4.1节所述。LURK客户端计算c、t、rG、tG
 错误应该提供给LURK客户端来表明产生错误的原因。当错误发生时，LURK服务器可以忽略该请求，或者提供更通用的错误码，如undefined_error或invalid_format。
 
 # 7. 能力
+capabilities的交换使得LURK客户端能够知道服务器支持的操作。支持的参数基于每种类型提供。
+
 ## 7.1 请求负载
+capabilities请求没有负载。
+
 ## 7.2 应答负载
+capabilities应答负载列出支持的每种类型，支持的证书，支持的签名，和哈希。capabilities负载结构如下：
+```
+struct {
+    KeyPairID key_id_type_list<0..255>;
+    PFSAlgorithmList freshness_funct_list<0..255>
+    OptionList option_list<0..255>
+    Certificate certificate_list
+} TLS12RSACapability;
+
+struct {
+   TLS12RSACapability rsa_cap;
+   SignatureAndHashAlgorithm sig_and_hash_list<0..255>
+   NameCurve ecdsa_curves_list<0..255>;
+   NameCurve ecdhe_curves_list<0..255>
+   POOPRF poo_prf_list<0..255>
+} TLS12ECDHECapability;
+
+struct {
+   uint32 length;
+   TLS12Type type
+   Select( type ) {
+          case rsa_master : TLS12RSACapability,
+          case rsa_extended_master : TLS12RSACapability,
+          case ecdhe : TLS12ECDHECapability
+   } capability ;
+} TLS12Capability
+
+struct {
+   TLS12Capability capability_list;
+   opaque state<32>;
+} TLS12CapabilitiesResponsePayload;
+```
+key_id_type_list：支持的key_id_type。
+freshness_funct_list：指定的freshness_funct列表（见4.1节）。
+
+certificate_list：指定和消息类型相关的证书。格式定义见[I-D.ietf-tls-tls13 4.4.2](https://tools.ietf.org/html/draft-mglt-lurk-tls12-01#section-4.4.2)。该格式允许使用X509，和裸的公钥，即[RFC5246 7.4.2]中所定义的证书结构。
+
+sig_and_hash_list：指定支持的签名算法和PRF用于的不同的操作。格式定义在[RFC5246 7.4.1.4.1](https://tools.ietf.org/html/rfc5246#section-7.4.1.4.1)。
+
+ecdsa_curves_list：支持的签名。
+
+ecdhe_curves_list：对于ECDHE参数支持的曲线。
+
+poo_prf_list：支持的消息类型poo_prf，详见6.1节。和所有权的证明一起使用。
+
+type_list：支持的LURK扩展的消息类型。
+
+state：LURK服务器上表征与'tls12'相关的配置。
+
 ## 7.3 LURK客户端行为
+LURK客户端发送capability请求来决定可能的操作。LURK客户端可以保存状态值当发生错误时能够检测到LURK服务器配置的变化。
+
 ## 7.4 LURK服务器行为
+收到capabilities请求后，LURK扩展必须返回capabilities负载和一个表示LURK服务器成功的状态。这些信息被LURK服务器转发到LURK客户端。
+
 # 8. ping
 ## 8.1 请求负载
 ## 8.2 应答负载
