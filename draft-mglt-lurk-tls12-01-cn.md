@@ -181,10 +181,48 @@ LURK客户端必须确保传输的server_random满足server_random = freshness_f
 11. 当发生错误时，应该将错误提供给LURK客户端，来表示错误发生的原因。当错误发生时，LURK服务器可以忽略错误或者提供更详细的错误码，如undefined_error或invalid_format。
 
 # 5. rsa_extended_master, rss_extended_master_with_poh
+rsa_extended_master交换使得LURK客户端代理RSA密钥交换和身份认证。LURK服务器返回扩展的主密钥，如[RFC7627](https://tools.ietf.org/html/rfc7627)所述。
+   
 ## 5.1 请求负载
+rsa_extended_master请求结构如下：
+```
+enum { sha256 (0), (255) } PRFAlgorithm
+
+enum { null(0), sha256_128(1), sha256_256(2),
+(255) }POOPRF
+
+struct {
+  KeyPairID key_id
+  PFSAlgorithm freshness_funct            // see RFC5246 section 6.1
+  opaque handshake_messages<2...2^16-2>
+                                // see RFC7627 section 4
+}TLS12ExtendedMasterRSARequestPayload;
+```
+rsa_extended_master_with_poh请求结构如下：
+```
+struct {
+    KeyPairID key_id
+    PFSAlgorithm freshness_funct              // see RFC5246 section 6.1
+    opaque handshake_messages<2...2^16-2>
+              // see RFC5246 section 7.4.9
+    Finished finished
+    }
+}TLS12ExtendedMasterRSAWithPoHRequestPayload;
+```
+key_id, freshness_funct, option, handshake, finished在4.1中定义。
+
+handshake_messages：握手消息包括产生扩展主密钥的必要信息，详见[RFC7627 第 4章](https://tools.ietf.org/html/rfc7627#section-4)。
+```
+
 ## 5.2 应答负载
+rsa_extended_master应答负载和4.2节描述的rsa_master应答负载具有相同的结构。
+
 ## 5.3 LURK客户端行为
+LURK客户端处理详见{{sec-rsa-master-clt}。主要的区别是计算主密钥的必要元素都被包含在握手中而不是分开提供的。
+
 ## 5.4 LURK服务器行为
+服务器处理如4.4节所述，除了产生扩展主密钥的过程，详见[RFC7627](https://tools.ietf.org/html/rfc7627)。
+
 # 6. ecdhe
 ## 6.1 请求负载
 ## 6.2 应答负载
