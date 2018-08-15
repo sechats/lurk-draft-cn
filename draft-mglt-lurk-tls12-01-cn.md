@@ -359,10 +359,20 @@ LURK客户端发送capability请求来决定可能的操作。LURK客户端可�
 收到capabilities请求后，LURK扩展必须返回capabilities负载和一个表示LURK服务器成功的状态。这些信息被LURK服务器转发到LURK客户端。
 
 # 8. ping
+ping交换使得LURK客户端能够在定义的LURK扩展上下文中检查可达性。
+
 ## 8.1 请求负载
+ping请求没有负载。
+
 ## 8.2 应答负载
+ping应答没有负载。
+
 ## 8.3 LURK客户端行为
+LURK客户端发送ping请求来测试到LURK服务器的可达性。对tls12 LURK扩展执行可达性。
+
 ## 8.4 LURK服务器行为
+收到ping请求后，LURK扩展必须返回ping应答，包含表示LURK服务器的成功状态。这些信息被LURK服务器发送到LURK客户端。
+
 # 9. 安全考虑
 ## 9.1 RSA
 ## 9.2 ECDHE
