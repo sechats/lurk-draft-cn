@@ -212,7 +212,6 @@ struct {
 key_id, freshness_funct, option, handshake, finished在4.1中定义。
 
 handshake_messages：握手消息包括产生扩展主密钥的必要信息，详见[RFC7627 第 4章](https://tools.ietf.org/html/rfc7627#section-4)。
-```
 
 ## 5.2 应答负载
 rsa_extended_master应答负载和4.2节描述的rsa_master应答负载具有相同的结构。
