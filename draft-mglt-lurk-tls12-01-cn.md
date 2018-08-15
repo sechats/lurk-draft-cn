@@ -224,10 +224,79 @@ LURK客户端处理详见{{sec-rsa-master-clt}。主要的区别是计算主密�
 服务器处理如4.4节所述，除了产生扩展主密钥的过程，详见[RFC7627](https://tools.ietf.org/html/rfc7627)。
 
 # 6. ecdhe
+ecdhe交换可以让LURK客户端代理ECDHE_RSA [RFC5246](https://tools.ietf.org/html/rfc5246)或者ECDHE_ECDSA[I-D.ietf-tls-rfc4492bis](https://tools.ietf.org/html/draft-mglt-lurk-tls12-01#ref-I-D.ietf-tls-rfc4492bis)身份验证。
+
 ## 6.1 请求负载
+ecdhe请求负载如下所示：
+```
+enum { null(0), sha256_128(1), sha256_256(2),
+(255) }POOPRF
+
+struct {
+    POOPRF poo_prf;
+    select( poo_prf) {
+        case ( "null" ):
+        case ( "sha256_128" or "sha256_256" ):
+            ECPoint rG;  //I-D.ietf-tls-rfc4492bis section 5.4
+            ECPoint tG;
+    }
+} TLS12POOParams;
+
+struct {
+    KeyPairID key_id;
+    PRFAlgorithm freshness_funct;
+    Random client_random;        // see RFC5246 section 7.4.1.2
+    Random server_random;
+    SignatureAndHashAlgorithm sig_and_hash  //RFC 5246 section 4.7
+    ServerECDHParams ecdhe_params;  // I-D.ietf-tls-rfc4492bis section 5.4
+    POOParams poo_params;
+} TLS12ECDHERequestPayload;
+```
+key_id, freshness_funct, client_random, server_random定义见4.1节。
+
+ecdhe_params：[I-D.ietf-tls-rfc4492bis 5.4](https://tools.ietf.org/html/draft-mglt-lurk-tls12-01#ref-I-D.ietf-tls-rfc4492bis)中所包含的，跟ECDH公钥（由ECParameters结构定义）相关椭圆曲线域名参数，和临时的ECDH公钥（由ECPoint结构定义）。在本文中公钥被标识成bG，b由LURK客户端产生的一个随机数密钥，而G是曲线的基点。
+
+poo_params：定义了必须的参数来提供ECDHE私钥的所有权证明。此选项旨在阻止LURK服务器签署和ECDHE公钥不匹配的请求。
+
+poo_prf：伪随机函数用来产生必须的随机数来证明私钥的所有权。本文定义了sha256_128和sha256_256，各自返回前128和256字节的哈希结果。
+
+rG, tG：必须的点来产生所有权的证明。r是LURK客户端选择的一个随机数。G是曲线的基点。t = cb + r, c是一个不受LURK客户端控制的数字，作为poo_prf和b的输出，私钥的随机密钥。
+
+所有权的证明包括LURK客户端证明私有的随机数b的知识，而不是公开b。
+
+c必须不受LURK客户端的控制。为了获得这个目标，c计算如下：
+c = poo_prf ( base + ecdhe_params + "tls12 poo")
+
+LURK客户端计算t = cb + r，然后在poo_params中发送rG和bG，在ecdhe_params发送bG。
+
+LURK服务器计算c(bG) + rG并比较tG的输出。如果相等，则证明LURK客户端拥有b的所有权。
+
+注意到r和c可以被认为是“非常短期的密钥”，但是必须不能被预测。建议使用相同的长度来满足安全水平，是128位（或256位）对于一个128（或256）位的安全级别。鉴于b，我们推荐r和c至少为b的一半大小。
+
 ## 6.2 应答负载
+ecdhe应答负载结构如下所示：
+```
+struct {
+   Signature signed_params;  // I-D.ietf-tls-rfc4492bis section 5.4
+} TLS12ECDHEResponsePayload;
+```
+signed_params：应用于ecdhe_params的哈希值，client_random和server_random，如[I-D.ietf-tls-rfc4492bis 5.4](https://tools.ietf.org/html/draft-mglt-lurk-tls12-01#ref-I-D.ietf-tls-rfc4492bis)所述。
+
 ## 6.3 LURK客户端行为
+LURK客户端构建基础，如4.1节所述。LURK客户端计算c、t、rG、tG如6.1节所示。
+
+收到应答负载后，LURK客户端可以检查签名。如果签名不匹配则应该上报错误。
+
 ## 6.4 LURK服务器行为
+收到ecdhe请求后，LURK服务器处理如下：
+1. 执行4.4节中描述的1-6步
+2. LURK服务器在签名之前，对ecdhe_params执行一些格式检查。如果ecdhe_params不具有期望的结构，根据[I-D.ietf-tls-rfc4492bis](https://tools.ietf.org/html/draft-mglt-lurk-tls12-01#ref-I-D.ietf-tls-rfc4492bis)所述，如果curve_type不是“named_curve”，则应该返回invalid_ec_type错误。如果曲线或者命名曲线是LURK服务器不支持的，则应该返回invalid_ec_curve错误。
+3. LURK服务器处理poo_params。如果poo_prf不支持，LURK扩展返回invalid_poo_prf。如果支持poo_prf，而且不是null，LURK服务器继续证明所有权，如6.1节所述。如果证明没有验证通过，LURK扩展返回invalid_poo状态码。
+4. LURK服务器处理基本结构，如4.4节所示。
+5. LURK服务器产生signed_params。
+
+错误应该提供给LURK客户端来表明产生错误的原因。当错误发生时，LURK服务器可以忽略该请求，或者提供更通用的错误码，如undefined_error或invalid_format。
+
 # 7. 能力
 ## 7.1 请求负载
 ## 7.2 应答负载
